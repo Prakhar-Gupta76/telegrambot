@@ -1,14 +1,18 @@
 const TelegramBot = require('node-telegram-bot-api');
 const fetch = require('node-fetch');
-const dotenv = require('dotenv');
 const express = require('express');
 const fs = require('fs');
 const cors = require('cors')
-dotenv.config();
 
-const WEATHER_API_KEY = process.env.WEATHER_API_KEY;
-const TELEGRAM_API_KEY = process.env.TELEGRAM_API_KEY;
-const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID;
+// not for deployed one
+// const dotenv = require('dotenv');
+// dotenv.config();
+// const WEATHER_API_KEY = process.env.WEATHER_API_KEY;
+// const TELEGRAM_API_KEY = process.env.TELEGRAM_API_KEY;
+// const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID;
+
+//for deployed one
+const { WEATHER_API_KEY, TELEGRAM_API_KEY, ADMIN_CHAT_ID } = require('./apis.js');
 
 const bot = new TelegramBot(TELEGRAM_API_KEY, { polling: true });
 
@@ -21,28 +25,32 @@ app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 
 app.post('/api/update-keys', (req, res) => {
-    console.log("Heyyyyyyyyyy")
-    console.log(req.body)
+    console.log("Updating API keys...");
+    console.log(req.body);
+
     const { WEATHER_API_KEY: newWeatherApiKey, TELEGRAM_API_KEY: newTelegramApiKey, ADMIN_CHAT_ID: newAdminChatId } = req.body;
     if (!newWeatherApiKey || !newTelegramApiKey || !newAdminChatId) {
         return res.status(400).json({ message: 'All keys are required.' });
     }
+    const apisData = `
+const WEATHER_API_KEY = "${newWeatherApiKey}";
+const TELEGRAM_API_KEY = "${newTelegramApiKey}";
+const ADMIN_CHAT_ID = "${newAdminChatId}";
 
-    const envData = `WEATHER_API_KEY=${newWeatherApiKey}\nTELEGRAM_API_KEY=${newTelegramApiKey}\nADMIN_CHAT_ID=${newAdminChatId}`;
-    fs.writeFileSync('.env', envData);
-    restartBot();
-    dotenv.config();
-    WEATHER_API_KEY = process.env.WEATHER_API_KEY;
-    TELEGRAM_API_KEY = process.env.TELEGRAM_API_KEY;
-    ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID;
+module.exports = { WEATHER_API_KEY, TELEGRAM_API_KEY, ADMIN_CHAT_ID };
+`;
+
+    try {
+        fs.writeFileSync('./apis.js', apisData.trim()); // Trim ensures no trailing spaces
+        console.log("API keys successfully updated in apis.js.");
+    } catch (error) {
+        console.error("Error writing to apis.js:", error);
+        return res.status(500).json({ message: 'Failed to update API keys.' });
+    }
+
     res.json({ message: 'API keys updated successfully.' });
 });
 
-function restartBot() {
-    bot.stopPolling();
-    bot = new TelegramBot(TELEGRAM_API_KEY, { polling: true });
-    console.log('Bot restarted with new keys.');
-}
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
