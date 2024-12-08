@@ -15,10 +15,6 @@ const bot = new TelegramBot(TELEGRAM_API_KEY, { polling: true });
 let subscribedUsers = new Set();
 let blockedUsers = new Set();
 
-let ggg = "d7ecd913029fb5c9c6e11f485fbafed5"
-let bbb = "7795517583:AAHO8tUC8URtef-A2PXJJ_twbLOiU4RYYLs"
-let aaa = "1341327910"
-
 const app = express()
 app.use(cors())
 app.use(express.json())
